@@ -8,7 +8,10 @@ VERB_WHITELIST = {
     "http://activitystrea.ms/save",
     "https://xapi.edlm/profiles/edlm-ecc/concepts/verbs/curated",
     "http://adlnet.gov/expapi/verbs/shared",
-    "http://id.tincanapi.com/verb/viewed"
+    "http://id.tincanapi.com/verb/viewed",
+    "https://xapi.edlm/profiles/edlm-lms/concepts/verbs/enrolled",
+    "http://activitystrea.ms/schema/1.0/start",
+    "http://adlnet.gov/expapi/verbs/completed"
 }
 
 
