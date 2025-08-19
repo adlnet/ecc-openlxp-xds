@@ -40,4 +40,6 @@ urlpatterns = [
     path('statements',
          views.StatementForwardView.as_view(),
          name='forward_statements'),
+    path('course-progress', views.GetCourseProgressView.as_view(),
+         name='course_progress')
 ]

@@ -14,6 +14,12 @@ from rest_framework.views import APIView
 from configurations.models import XDSConfiguration
 from core.management.utils.xds_internal import bleach_data_to_json
 from core.models import CourseSpotlight, Experience, InterestList, SavedFilter
+from xds_api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
+                                      PLATFORM,
+                                      filter_courses_by_exclusion,
+                                      get_lrs_statements,
+                                      process_course_statements,
+                                      remove_duplicates)
 from xds_api.serializers import InterestListSerializer, SavedFilterSerializer
 from xds_api.utils.xds_utils import (get_request,
                                      get_spotlight_courses_api_url,
@@ -714,3 +720,110 @@ class StatementForwardView(APIView):
                             status.HTTP_502_BAD_GATEWAY)
 
         return JsonResponse(resp.json(), status=resp.status_code, safe=False)
+
+
+class GetCourseProgressView(APIView):
+    """Handles xAPI Course Progress Data Requests"""
+
+    def get(self, request):
+        """Get course progress data"""
+
+        config = XDSConfiguration.objects.first()
+        if not config:
+            return Response({'message': 'No XDS configuration found.'},
+                            status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        lrs_endpoint = config.lrs_endpoint
+        lrs_username = config.lrs_username
+        lrs_password = config.lrs_password
+
+        if not (lrs_endpoint and lrs_username and lrs_password):
+            return Response({'message': 'LRS credentials not configured.'},
+                            status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Get User identifier (email)
+        user_identifier = None
+        if settings.XAPI_USE_JWT:
+            account_name = jwt_account_name(
+                request,
+                settings.XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS
+            )
+            if account_name is None:
+                # Return a 400 if none matched
+                return Response(
+                    {"message": "No valid JWT field found."},
+                    status.HTTP_400_BAD_REQUEST
+                )
+            user_identifier = account_name
+        else:
+            if request.user.is_authenticated:
+                user_identifier = request.user.email  # Safe to access
+            elif settings.XAPI_ALLOW_ANON:
+                # request.user is AnonymousUser
+                user_identifier = settings.XAPI_ANON_MBOX
+            else:
+                return Response({'message': 'Could not form xAPI Actor.'},
+                                status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            # Get completed statements
+            completed_statements = get_lrs_statements(
+                lrs_endpoint,
+                lrs_username,
+                lrs_password,
+                user_identifier,
+                COURSE_PROGRESS_VERBS['completed'],
+                PLATFORM['moodle']
+            )
+            # Get enrolled statements
+            enrolled_statements = get_lrs_statements(
+                lrs_endpoint,
+                lrs_username,
+                lrs_password,
+                user_identifier,
+                COURSE_PROGRESS_VERBS['enrolled'],
+                PLATFORM['moodle']
+            )
+            # Get in-progress statements
+            in_progress_statements = get_lrs_statements(
+                lrs_endpoint,
+                lrs_username,
+                lrs_password,
+                user_identifier,
+                COURSE_PROGRESS_VERBS['in-progress'],
+                PLATFORM['moodle']
+            )
+
+            # Process statements
+            completed_courses = process_course_statements(
+                completed_statements, "completed")
+            enrolled_courses = process_course_statements(
+                enrolled_statements, "enrolled")
+            in_progress_courses = process_course_statements(
+                in_progress_statements, "in-progress")
+
+            # Remove any duplicates
+            completed_courses = remove_duplicates(completed_courses)
+            enrolled_courses = remove_duplicates(enrolled_courses)
+            in_progress_courses = remove_duplicates(in_progress_courses)
+
+            # Keep only in-progress courses that aren't already completed
+            in_progress_courses = filter_courses_by_exclusion(
+                in_progress_courses, completed_courses)
+
+            resp_data = {
+                'completed_courses': completed_courses,
+                'enrolled_courses': enrolled_courses,
+                'in_progress_courses': in_progress_courses
+            }
+
+            return Response(resp_data, status.HTTP_200_OK)
+
+        except ConnectionError:
+            return Response({'message': 'Could not connect to LRS'},
+                            status.HTTP_502_BAD_GATEWAY)
+        except Exception as err:
+            logger.error(err)
+            error_msg = 'An error occurred while fetching course progress'
+            return Response({'message': error_msg},
+                            status.HTTP_500_INTERNAL_SERVER_ERROR)
