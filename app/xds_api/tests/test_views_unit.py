@@ -1035,3 +1035,44 @@ class StatementForwardTests(TestSetUp):
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         # Also verify that requests.post was indeed called
         mock_post_splode.assert_called_once()
+
+
+@tag("unit")
+class GetCourseProgressViewTests(TestSetUp):
+    @patch("xds_api.views.get_lrs_statements")
+    def test_get_lrs_success(self, mock_get_lrs):
+        """Test that LRS data are retrieved successfully"""
+        mock_get_lrs.return_value = {
+            "statements": []
+        }
+
+        url = reverse("xds_api:course_progress")
+
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch("xds_api.views.get_lrs_statements",
+           side_effect=Exception("Unexpected Error")
+           )
+    def test_return_general_error(self, mock_get_lrs):
+        """Test that returns an unexpected general error occurs"""
+        mock_get_lrs.return_value = {
+            "statements": []
+        }
+
+        url = reverse("xds_api:course_progress")
+
+        resp = self.client.get(url)
+
+        self.assertEqual(
+            resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    def test_returns_502_when_connection_fails(self):
+        """Test that returns a 502 error when the connection fails"""
+        url = reverse("xds_api:course_progress")
+
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
