@@ -1,6 +1,6 @@
 # Dockerfile
 
-FROM python:3.9-bookworm
+FROM python:3.13-bookworm
 
 # install nginx
 RUN apt-get update && apt-get install nginx vim libxml2-dev libxmlsec1-dev -y --no-install-recommends && \
