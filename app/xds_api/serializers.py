@@ -132,3 +132,21 @@ class SavedFilterSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class InterestListMostSubscribedSerializer(serializers.ModelSerializer):
+    """Serializes the most subscribed interest lists with subscriber count"""
+    num_subscribers = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = InterestList
+        fields = ['id', 'name', 'num_subscribers']
+
+
+class CourseMostSavedSerializer(serializers.ModelSerializer):
+    """Serializes the most saved courses with save count"""
+    num_saved = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Experience
+        fields = ['metadata_key_hash', 'num_saved']

@@ -40,4 +40,10 @@ urlpatterns = [
     path('statements',
          views.StatementForwardView.as_view(),
          name='forward_statements'),
+    path('interest-lists/most-subscribed',
+         views.InterestListMostSubscribedView.as_view(),
+         name='most-subscribed-lists'),
+    path('experiences/most-saved',
+         views.CourseMostSavedView.as_view(),
+         name='most-saved-courses'),
 ]
