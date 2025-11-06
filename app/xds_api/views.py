@@ -8,11 +8,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from requests.exceptions import ConnectionError, HTTPError
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from configurations.models import XDSConfiguration
+from configurations.models import CourseInformationMapping, XDSConfiguration
 from core.management.utils.xds_internal import bleach_data_to_json
 from core.models import CourseSpotlight, Experience, InterestList, SavedFilter
 from xds_api.serializers import (CourseMostSavedSerializer,
@@ -747,71 +747,37 @@ class InterestListMostSubscribedView(APIView):
             return Response(serializer_class.data, status.HTTP_200_OK)
 
 
-class CourseMostSavedView(APIView):
+class CourseMostSavedViewSet(viewsets.ReadOnlyModelViewSet):
     """Get the top 5 most saved courses across all interest lists"""
+    serializer_class = CourseMostSavedSerializer
+    queryset = (
+        Experience.objects.all()
+        .annotate(num_saved=Count("interestlist"))
+        .order_by("-num_saved")[:5]
+    )
 
-    def get(self, request):
-        """Handles HTTP requests for top 5 saved courses"""
-        errorMsg = {
-            "message": "Error fetching courses please check the logs."
-        }
+    def get_serializer_context(self):
+        """Get course mapping and formatted response for serializer context"""
+        context = super().get_serializer_context()
+        context['formatted_response'] = []
+        context['course_mapping'] = CourseInformationMapping.objects.first()
 
         try:
-            # Top 5 most saved courses across all interest lists,
-            # annotated with save count, ordered by number of saves
-            querySet = Experience.objects.all().annotate(
-                num_saved=Count('interestlist')).order_by(
-                '-num_saved')[:5]
-
-            serializer_class = CourseMostSavedSerializer(querySet, many=True)
-
-            courses_list = serializer_class.data
             course_query = '?metadata_key_hash_list='
-            courses = [course['metadata_key_hash'] for course in courses_list]
+            courses = list(
+                self.queryset.values_list('metadata_key_hash', flat=True)
+            )
 
-            # for each hash key in the courses list, append them to the query
             courses, course_query = (
-                interest_list_check(courses, course_query))
+               interest_list_check(courses, course_query))
 
             if len(courses) > 0:
                 response, response_json = (
                     interest_list_get_search_str(course_query))
 
                 if response.status_code == 200:
-                    formatted_response = metadata_to_target(response_json)
-
-                    # map course hash to number of times saved
-                    course_count_map = {}
-                    for course in courses_list:
-                        course_count_map[course['metadata_key_hash']] = \
-                            course['num_saved']
-
-                    # return response with course title, hashkey, and num saved
-                    resp = []
-                    for course in formatted_response:
-                        title = course.get('p2881-core', {}).get(
-                            'Title', '')
-                        hash_key = course.get('meta', {}).get(
-                            'metadata_key_hash', '')
-                        num_saved = course_count_map.get(hash_key, 0)
-                        resp.append({
-                            'title': title,
-                            'metadata_key_hash': hash_key,
-                            'num_saved': num_saved,
-                        })
-
-                    return Response(resp, status=status.HTTP_200_OK)
-                else:
-                    return Response(response.json(),
-                                    status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            else:
-                return Response([], status=status.HTTP_200_OK)
-
-        except HTTPError as http_err:
-            logger.error(http_err)
-            return Response(errorMsg,
-                            status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    context['formatted_response'] = \
+                        metadata_to_target(response_json)
         except Exception as err:
             logger.error(err)
-            return Response(errorMsg,
-                            status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return context

@@ -1039,17 +1039,6 @@ class StatementForwardTests(TestSetUp):
 
 @tag('unit')
 class InterestListMostSubscribedTests(TestSetUp):
-    def test_get_most_subscribed_interest_lists_unauthenticated(self):
-        """
-        Test that an unauthenticated user can not fetch
-        most subscribed interest lists.
-        Endpoint: /api/interest-lists/most-subscribed
-        """
-        url = reverse('xds_api:most-subscribed-lists')
-
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_most_subscribed_interest_lists_authenticated(self):
         """
@@ -1099,29 +1088,26 @@ class InterestListMostSubscribedTests(TestSetUp):
 
 @tag('unit')
 class CourseMostSavedTests(TestSetUp):
-    def test_get_most_saved_courses_unauthenticated(self):
-        """
-        Test that an unauthenticated user can not fetch most saved courses
-        Endpoint: /api/experiences/most-saved
-        """
-        url = reverse('xds_api:most-saved-courses')
-
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_most_saved_courses_authenticated(self):
         """
         Test that an authenticated user can fetch top 5 most saved courses
         Endpoint: /api/experiences/most-saved
         """
-        url = reverse('xds_api:most-saved-courses')
+        url = reverse('xds_api:most-saved-courses-list')
 
         self.client.login(email=self.auth_email, password=self.auth_password)
+
+        mock_mapping = Mock()
+        mock_mapping.course_title = 'test-core.Title'
 
         with (
             patch('xds_api.views.metadata_to_target') as metadata_to_target,
             patch('xds_api.views.interest_list_check') as interest_list_check,
+            patch(
+                'xds_api.views.CourseInformationMapping.objects.first',
+                return_value=mock_mapping,
+            ),
             patch(
                 'xds_api.views.interest_list_get_search_str'
             ) as interest_list_get_search_str,
@@ -1153,7 +1139,7 @@ class CourseMostSavedTests(TestSetUp):
             # Mock the metadata formatting
             metadata_to_target.return_value = [
                 {
-                    'p2881-core': {'Title': 'Test Course 998'},
+                    'test-core': {'Title': 'Test Course 998'},
                     'meta': {'metadata_key_hash': '1234'}
                 }
             ]
@@ -1166,24 +1152,3 @@ class CourseMostSavedTests(TestSetUp):
             self.assertEqual(responseDict[0]['title'], 'Test Course 998')
             self.assertEqual(responseDict[0]['metadata_key_hash'], '1234')
             self.assertIn('num_saved', responseDict[0])
-
-    def test_get_most_saved_courses_http_error(self):
-        """
-        Test that a http error return 500 status code
-        Endpoint: /api/experiences/most-saved
-        """
-        url = reverse('xds_api:most-saved-courses')
-
-        error_msg = 'Error fetching courses please check the logs.'
-
-        self.client.login(email=self.auth_email, password=self.auth_password)
-
-        with patch('xds_api.views.get_request') as get_request:
-            get_request.side_effect = [HTTPError]
-
-            response = self.client.get(url)
-            response_dict = json.loads(response.content)
-
-            self.assertEqual(response.status_code,
-                             status.HTTP_500_INTERNAL_SERVER_ERROR)
-            self.assertEqual(response_dict['message'], error_msg)

@@ -133,3 +133,19 @@ def interest_list_get_search_str(courseQuery):
         else:
             break
     return response, responseJSON
+
+
+def get_course_title_from_response(formatted_response,
+                                   meta_key_hash, course_mapping):
+    """Get course title from formatted API response
+        using metadata_key_hash and course_mapping"""
+
+    if '.' not in course_mapping.course_title:
+        return None
+
+    title_field, title_key = course_mapping.course_title.split('.')
+
+    for course in formatted_response:
+        if course.get('meta', {}).get('metadata_key_hash') == meta_key_hash:
+            return course.get(title_field, {}).get(title_key, '')
+    return None

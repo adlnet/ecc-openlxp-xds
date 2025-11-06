@@ -1,11 +1,15 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from xds_api import views
 
 router = DefaultRouter()
+router.register(r'experiences/most-saved',
+                views.CourseMostSavedViewSet,
+                'most-saved-courses')
 
 app_name = 'xds_api'
 urlpatterns = [
+    path('', include(router.urls)),
     path('spotlight-courses', views.GetSpotlightCoursesView.as_view(),
          name='spotlight-courses'),
     path('experiences/<str:exp_hash>/', views.GetExperiencesView.as_view(),
@@ -42,8 +46,5 @@ urlpatterns = [
          name='forward_statements'),
     path('interest-lists/most-subscribed',
          views.InterestListMostSubscribedView.as_view(),
-         name='most-subscribed-lists'),
-    path('experiences/most-saved',
-         views.CourseMostSavedView.as_view(),
-         name='most-saved-courses'),
+         name='most-subscribed-lists')
 ]
