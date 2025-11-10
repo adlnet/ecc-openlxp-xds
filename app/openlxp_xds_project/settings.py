@@ -332,6 +332,8 @@ OPEN_ENDPOINTS = [
     "/api/experiences/[a-zA-Z0-9]+/",
     "/api/spotlight-courses",
     "/es-api/similar-courses/[a-zA-Z0-9]+/",
+    "/api/interest-lists/most-subscribed",
+    "/api/experiences/most-saved"
 ]
 
 if XAPI_ALLOW_ANON and not XAPI_USE_JWT:

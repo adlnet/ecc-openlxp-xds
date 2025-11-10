@@ -133,3 +133,37 @@ def interest_list_get_search_str(courseQuery):
         else:
             break
     return response, responseJSON
+
+
+def get_multilevel_dict(dictionary, path):
+    """
+    Recursive function to traverse dict to path and retrive value.
+    :param dictionary: the dictionary to traverse
+    :param path: a list of keys to navigate through to the final item
+    :return: returns the value at the path
+    """
+    if path == []:
+        return dictionary
+
+    if isinstance(dictionary, dict) and path[0] in dictionary:
+        return get_multilevel_dict(dictionary[path[0]], path[1:])
+
+    return None
+
+
+def get_course_title_from_response(formatted_response,
+                                   meta_key_hash, course_mapping):
+    """Get course title from formatted API response
+        using metadata_key_hash and course_mapping"""
+
+    if '.' not in course_mapping.course_title:
+        return None
+
+    # Split into list for traversal
+    path = course_mapping.course_title.split('.')
+
+    for course in formatted_response:
+        if course.get('meta', {}).get('metadata_key_hash') == meta_key_hash:
+            return get_multilevel_dict(course, path)
+
+    return None

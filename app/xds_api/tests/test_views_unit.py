@@ -1035,3 +1035,120 @@ class StatementForwardTests(TestSetUp):
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         # Also verify that requests.post was indeed called
         mock_post_splode.assert_called_once()
+
+
+@tag('unit')
+class InterestListMostSubscribedTests(TestSetUp):
+
+    def test_get_most_subscribed_interest_lists_authenticated(self):
+        """
+        Test that an authenticated user can fetch top 5
+        most subscribed interest lists.
+        Endpoint: /api/interest-lists/most-subscribed
+        """
+        url = reverse('xds_api:most-subscribed-lists')
+
+        self.list_1.public = True
+        self.list_2.public = True
+        self.list_3.public = True
+        self.list_1.save()
+        self.list_2.save()
+        self.list_3.save()
+
+        self.client.login(email=self.auth_email, password=self.auth_password)
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_most_subscribed_interest_lists_no_public_lists(self):
+        """
+        Test that an authenticated user gets an empty list,
+        when there are no public interest lists.
+        Endpoint: /api/interest-lists/most-subscribed
+        """
+        url = reverse('xds_api:most-subscribed-lists')
+
+        self.list_1.public = False
+        self.list_2.public = False
+        self.list_3.public = False
+        self.list_1.save()
+        self.list_2.save()
+        self.list_3.save()
+
+        self.client.login(email=self.auth_email, password=self.auth_password)
+
+        response = self.client.get(url)
+
+        response_dict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response_dict), 0)
+
+
+@tag('unit')
+class CourseMostSavedTests(TestSetUp):
+
+    def test_get_most_saved_courses_authenticated(self):
+        """
+        Test that an authenticated user can fetch top 5 most saved courses
+        Endpoint: /api/experiences/most-saved
+        """
+        url = reverse('xds_api:most-saved-courses-list')
+
+        self.client.login(email=self.auth_email, password=self.auth_password)
+
+        mock_mapping = Mock()
+        mock_mapping.course_title = 'test-core.Title'
+
+        with (
+            patch('xds_api.views.metadata_to_target') as metadata_to_target,
+            patch('xds_api.views.interest_list_check') as interest_list_check,
+            patch(
+                'xds_api.views.CourseInformationMapping.objects.first',
+                return_value=mock_mapping,
+            ),
+            patch(
+                'xds_api.views.interest_list_get_search_str'
+            ) as interest_list_get_search_str,
+        ):
+
+            # Mock interest_list_check
+            interest_list_check.return_value = (
+                ['1234'],  # list of hashes
+                '?metadata_key_hash_list=1234',
+            )
+
+            # Mock the response
+            mock_resp = Mock()
+            mock_resp.status_code = 200
+            mock_json_data = {
+                'results': [
+                    {
+                        'test': 'value',
+                    }
+                ]
+            }
+
+            # Mock interest_list_get_search_str
+            interest_list_get_search_str.return_value = (
+                mock_resp,
+                mock_json_data
+            )
+
+            # Mock the metadata formatting
+            metadata_to_target.return_value = [
+                {
+                    'test-core': {'Title': 'Test Course 998'},
+                    'meta': {'metadata_key_hash': '1234'}
+                }
+            ]
+
+            response = self.client.get(url)
+            responseDict = json.loads(response.content)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIsInstance(responseDict, list)
+            self.assertEqual(responseDict[0]['title'], 'Test Course 998')
+            self.assertEqual(responseDict[0]['metadata_key_hash'], '1234')
+            self.assertIn('num_saved', responseDict[0])

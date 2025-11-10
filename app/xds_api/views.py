@@ -5,16 +5,20 @@ from collections import OrderedDict
 import requests
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from requests.exceptions import ConnectionError, HTTPError
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from configurations.models import XDSConfiguration
+from configurations.models import CourseInformationMapping, XDSConfiguration
 from core.management.utils.xds_internal import bleach_data_to_json
 from core.models import CourseSpotlight, Experience, InterestList, SavedFilter
-from xds_api.serializers import InterestListSerializer, SavedFilterSerializer
+from xds_api.serializers import (CourseMostSavedSerializer,
+                                 InterestListMostSubscribedSerializer,
+                                 InterestListSerializer,
+                                 SavedFilterSerializer)
 from xds_api.utils.xds_utils import (get_request,
                                      get_spotlight_courses_api_url,
                                      interest_list_check,
@@ -714,3 +718,66 @@ class StatementForwardView(APIView):
                             status.HTTP_502_BAD_GATEWAY)
 
         return JsonResponse(resp.json(), status=resp.status_code, safe=False)
+
+
+class InterestListMostSubscribedView(APIView):
+    """Get the top 5 most subscribed interest lists"""
+
+    def get(self, request):
+        """Handles HTTP requests for top 5 interest lists"""
+        errorMsg = {
+            "message": "Error fetching interest lists please check the logs."
+        }
+
+        try:
+            # Top 5 most subscribed interest lists,
+            # Filtered to public only, annotated with subscriber count,
+            # Ordered by number of subscribers
+            querySet = InterestList.objects.all().filter(
+                public=True).annotate(num_subscribers=Count(
+                    'subscribers')).order_by('-num_subscribers')[:5]
+
+            serializer_class = InterestListMostSubscribedSerializer(
+                querySet, many=True)
+
+        except Exception as err:
+            logger.error(err)
+            return Response(errorMsg, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response(serializer_class.data, status.HTTP_200_OK)
+
+
+class CourseMostSavedViewSet(viewsets.ReadOnlyModelViewSet):
+    """Get the top 5 most saved courses across all interest lists"""
+    serializer_class = CourseMostSavedSerializer
+    queryset = (
+        Experience.objects.all()
+        .annotate(num_saved=Count("interestlist"))
+        .order_by("-num_saved")[:5]
+    )
+
+    def get_serializer_context(self):
+        """Get course mapping and formatted response for serializer context"""
+        context = super().get_serializer_context()
+        context['formatted_response'] = []
+        context['course_mapping'] = CourseInformationMapping.objects.first()
+
+        try:
+            course_query = '?metadata_key_hash_list='
+            courses = list(
+                self.queryset.values_list('metadata_key_hash', flat=True)
+            )
+
+            courses, course_query = (
+               interest_list_check(courses, course_query))
+
+            if len(courses) > 0:
+                response, response_json = (
+                    interest_list_get_search_str(course_query))
+
+                if response.status_code == 200:
+                    context['formatted_response'] = \
+                        metadata_to_target(response_json)
+        except Exception as err:
+            logger.error(err)
+        return context

@@ -5,6 +5,7 @@ from core.models import (CourseDetailHighlight, Experience, InterestList,
                          SavedFilter, SearchSortOption)
 from rest_framework import serializers
 from users.serializers import XDSUserSerializer
+from xds_api.utils.xds_utils import get_course_title_from_response
 
 logger = logging.getLogger('dict_config_logger')
 
@@ -132,3 +133,30 @@ class SavedFilterSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class InterestListMostSubscribedSerializer(serializers.ModelSerializer):
+    """Serializes the most subscribed interest lists with subscriber count"""
+    num_subscribers = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = InterestList
+        fields = ['id', 'name', 'num_subscribers']
+
+
+class CourseMostSavedSerializer(serializers.ModelSerializer):
+    """Serializes the most saved courses with save count"""
+    num_saved = serializers.IntegerField(read_only=True)
+    title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Experience
+        fields = ['metadata_key_hash', 'num_saved', 'title']
+
+    def get_title(self, instance):
+        formatted_response = self.context.get('formatted_response', [])
+        course_mapping = self.context.get('course_mapping')
+        title = get_course_title_from_response(formatted_response,
+                                               instance.metadata_key_hash,
+                                               course_mapping)
+        return title or 'No Title Found'
