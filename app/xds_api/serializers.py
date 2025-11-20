@@ -68,12 +68,14 @@ class InterestListSerializer(serializers.ModelSerializer):
     """Serializes the interest list model"""
     owner = XDSUserSerializer(read_only=True)
     subscribers = XDSUserSerializer(many=True, read_only=True)
+    can_toggle_public = serializers.SerializerMethodField()
 
     class Meta:
         model = InterestList
         fields = '__all__'
 
     def create(self, validated_data):
+
         name = validated_data.get("name")
         description = validated_data.get("description")
         owner = validated_data.get("owner")
@@ -84,11 +86,26 @@ class InterestListSerializer(serializers.ModelSerializer):
                                            public=public)
 
     def update(self, instance, validated_data):
+
+        request = self.context.get('request') 
+
+        # Only allow changing 'public' if user has the permission
+        
+        new_public = validated_data.get('public', instance.public)
+        if new_public != instance.public:
+            if not request.user.has_perm('core.can_toggle_public'):
+                raise serializers.ValidationError(
+                    "You do not have permission to change the public/private status of this list."
+                )
+                    
+            
+        instance.public = new_public
+
         instance.owner = validated_data.get('owner', instance.owner)
         instance.description = validated_data.get('description',
                                                   instance.description)
         instance.name = validated_data.get('name', instance.name)
-        instance.public = validated_data.get('public', instance.public)
+        
         experiences = validated_data.get('experiences')
         # for each experience in the experience list, we add the experience to
         # the current interest list
@@ -113,6 +130,15 @@ class InterestListSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+    def get_can_toggle_public(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        # Check to make sure user and owner are the same and that they have permission 
+        if user and user.has_perm('core.can_toggle_public'):
+            return True
+        
+        return False
 
 
 class SavedFilterSerializer(serializers.ModelSerializer):

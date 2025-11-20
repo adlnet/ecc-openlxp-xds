@@ -4,11 +4,11 @@ from collections import OrderedDict
 
 import requests
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Count
 from django.http import HttpResponse, HttpResponseServerError, JsonResponse
 from requests.exceptions import ConnectionError, HTTPError
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -151,9 +151,11 @@ class InterestListsView(APIView):
         # initially fetch all public records not owned by the current user
         querySet = InterestList.objects.filter(
             public=True).exclude(owner=request.user)
+        
+        logger.info('GET InterestListView called')
 
         try:
-            serializer_class = InterestListSerializer(querySet, many=True)
+            serializer_class = InterestListSerializer(querySet, many=True, context={'request': request})
         except HTTPError as http_err:
             logger.error(http_err)
             return Response(errorMsg,
@@ -168,11 +170,15 @@ class InterestListsView(APIView):
     def post(self, request):
         """Updates interest lists"""
 
+        logger.info('POST InterestListView called')
+
         # bleaching/cleaning HTML tags from request data
         bleach_data = bleach_data_to_json(request.data)
 
         # Assign data from request to serializer
-        serializer = InterestListSerializer(data=bleach_data)
+        serializer = InterestListSerializer(data=bleach_data, many=True, context={'request': request})
+
+        # logger.info("InterestListView POST called")
 
         if not serializer.is_valid():
             # If not received send error and bad request status
@@ -207,7 +213,7 @@ class InterestListView(APIView):
                                  + " this Interest List"},
                                 status=status.HTTP_401_UNAUTHORIZED)
 
-            serializer_class = InterestListSerializer(queryset)
+            serializer_class = InterestListSerializer(queryset, context={'request': request})
             # fetch actual courses for each id in the courses array
             interestList = serializer_class.data
             courseQuery = "?metadata_key_hash_list="
@@ -258,7 +264,7 @@ class InterestListView(APIView):
             # save new experiences
             save_experiences(request.data['experiences'])
             # Assign data from request to serializer
-            serializer = InterestListSerializer(queryset, data=request.data)
+            serializer = InterestListSerializer(queryset, data=request.data, context={'request': request})
 
             if not serializer.is_valid():
                 # If not received send error and bad request status
@@ -270,6 +276,10 @@ class InterestListView(APIView):
 
             return Response(serializer.data,
                             status=status.HTTP_200_OK)
+        except serializers.ValidationError as err:
+            logger.error(str(err))
+            err_msg = err.detail
+            return Response(err_msg, status=status.HTTP_400_BAD_REQUEST)
         except HTTPError as http_err:
             logger.error(http_err)
             return Response(self.errorMsg,
@@ -280,6 +290,7 @@ class InterestListView(APIView):
         except Exception as err:
             logger.error(err)
             return Response(err, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def delete(self, request, list_id):
         """This method deletes a single interest list"""
@@ -365,7 +376,7 @@ class InterestListsOwnedView(APIView):
 
         try:
             querySet = InterestList.objects.filter(owner=user)
-            serializer_class = InterestListSerializer(querySet, many=True)
+            serializer_class = InterestListSerializer(querySet, many=True, context={'request': request})
         except HTTPError as http_err:
             logger.error(http_err)
             return Response(errorMsg, status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -390,7 +401,7 @@ class InterestListsSubscriptionsView(APIView):
 
         try:
             querySet = user.subscriptions
-            serializer_class = InterestListSerializer(querySet, many=True)
+            serializer_class = InterestListSerializer(querySet, many=True, context={'request': request})
         except HTTPError as http_err:
             logger.error(http_err)
             return Response(errorMsg, status.HTTP_500_INTERNAL_SERVER_ERROR)

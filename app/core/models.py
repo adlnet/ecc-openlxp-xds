@@ -6,7 +6,6 @@ from django.forms import ValidationError
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
 
-
 class SearchFilter(TimeStampedModel):
     """Model to contain fields used for filtering search results"""
     FILTER_TYPE_CHOICES = [
@@ -193,6 +192,12 @@ class InterestList(TimeStampedModel):
             # Remove any subscribers
             self.subscribers.clear()
         return super(InterestList, self).save(*args, **kwargs)
+    
+    # Custom permission to allow toggling public/private on interest lists
+    class Meta:
+        permissions = [
+            ("can_toggle_public", "Can toggle public/private on interest lists"),
+        ]
 
 
 class SavedFilter(TimeStampedModel):
