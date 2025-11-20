@@ -176,7 +176,7 @@ class InterestListsView(APIView):
         bleach_data = bleach_data_to_json(request.data)
 
         # Assign data from request to serializer
-        serializer = InterestListSerializer(data=bleach_data, many=True, context={'request': request})
+        serializer = InterestListSerializer(data=bleach_data, context={'request': request})
 
         # logger.info("InterestListView POST called")
 
