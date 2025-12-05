@@ -85,12 +85,11 @@ class InterestListsTests(TestSetUp):
         # login user
         self.client.login(email=self.auth_email, password=self.auth_password)
 
-        empty_list = list()
         # create interest list
         interest_list_data = {
             "name": "Test Interest List",
             "description": "Test Description",
-            "experiences": empty_list,
+            "courses": []
         }
 
         response = self.client.post(url, interest_list_data, format="json")
