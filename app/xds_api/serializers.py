@@ -87,25 +87,23 @@ class InterestListSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
 
-        request = self.context.get('request') 
-
         # Only allow changing 'public' if user has the permission
-        
+
         new_public = validated_data.get('public', instance.public)
         if new_public != instance.public:
-            if not request.user.has_perm('core.can_toggle_public'):
+            if not self.get_can_toggle_public(instance):
                 raise serializers.ValidationError(
-                    "You do not have permission to change the public/private status of this list."
+                    "You do not have permission to change the" +
+                    " public/private status of this list."
                 )
-                    
-            
+
         instance.public = new_public
 
         instance.owner = validated_data.get('owner', instance.owner)
         instance.description = validated_data.get('description',
                                                   instance.description)
         instance.name = validated_data.get('name', instance.name)
-        
+
         experiences = validated_data.get('experiences')
         # for each experience in the experience list, we add the experience to
         # the current interest list
@@ -134,10 +132,11 @@ class InterestListSerializer(serializers.ModelSerializer):
     def get_can_toggle_public(self, obj):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
-        # Check to make sure user and owner are the same and that they have permission 
+        # Check to make sure user and owner are
+        # the same and that they have permission
         if user and user.has_perm('core.can_toggle_public'):
             return True
-        
+
         return False
 
 
