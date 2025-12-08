@@ -194,6 +194,13 @@ class InterestList(TimeStampedModel):
             self.subscribers.clear()
         return super(InterestList, self).save(*args, **kwargs)
 
+    # Custom permission to allow toggling public/private on interest lists
+    class Meta:
+        permissions = [
+            ("can_toggle_public",
+             "Can toggle public/private on interest lists"),
+        ]
+
 
 class SavedFilter(TimeStampedModel):
     """Model for Saved Filter"""
