@@ -1,3 +1,11 @@
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a) {
+    text-decoration: inherit;
+}
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a):hover,
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a):focus {
+    text-decoration: underline;
+}
+
 /* fix generic flex container */
 .admin-interface .flex-container {
     width: 100%;
@@ -99,6 +107,10 @@
     margin-top: 8px;
 }
 /* end fix */
+
+.admin-interface .related-widget-wrapper .selector-chooser {
+    border-radius: 15px;
+}
 
 /* fix selector chooser slide transition */
 .admin-interface .related-widget-wrapper .selector-chooser .selector-add,

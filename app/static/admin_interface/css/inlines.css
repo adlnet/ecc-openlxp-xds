@@ -10,10 +10,8 @@
 
 .admin-interface .inline-group .inlinechangelink {
     margin-left: 10px;
-}
-
-.admin-interface .inline-group .inline-related.tabular .inlinechangelink {
-    background-size: contain;
+    font-size: 11px;
+    padding-left: 18px;
 }
 /* end fix */
 
@@ -59,6 +57,10 @@
 /* begin fix issue #12 - Inlines bad delete buttons alignement */
 .admin-interface .inline-group .tabular thead th:last-child:not([class]):not([style]) {
     text-align: right;
+}
+
+.admin-interface  .inline-group .tabular tr td.original p {
+    font-size: 11px;
 }
 
 .admin-interface .inline-group .tabular tr td {

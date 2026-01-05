@@ -26,11 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY_VAL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 mimetypes.add_type("text/css", ".css", True)
 
-ALLOWED_HOSTS = [os.environ.get("HOSTS")]
+# ALLOWED_HOSTS = [os.environ.get("HOSTS")]
+ALLOWED_HOSTS = ["*"]
 
 # Content Security Policy (CSP)
 SELF_VALUE = "'self'"  # defining a constant
