@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'health_check',
     'rest_framework',
     'rest_framework.authtoken',
+    'p1_auth',
     'openlxp_notifications',
     'social_django',
     'openlxp_authentication',
@@ -76,6 +77,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'p1_auth.middleware.AuthenticateSessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -269,6 +271,7 @@ USER_ATTRIBUTES = [
 ]
 
 AUTHENTICATION_BACKENDS = (
+    'p1_auth.backends.PlatformOneAuthentication',
     'django.contrib.auth.backends.ModelBackend',
     'openlxp_authentication.models.SAMLDBAuth',
 )
@@ -279,6 +282,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'users.models.PermissionsChecker',
+        'p1_auth.backends.PlatformOneRestAuthentication',
     ]
 }
 
@@ -316,7 +320,6 @@ XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS = [
     for field in os.environ.get('XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS', 'activecac,preferred_username').split(',')
 ]
 
-
 # Accepts regex arguments
 OPEN_ENDPOINTS = [
     "/api/auth/register",
@@ -337,3 +340,36 @@ OPEN_ENDPOINTS = [
 
 if XAPI_ALLOW_ANON and not XAPI_USE_JWT:
     OPEN_ENDPOINTS.append("/api/statements")
+
+# P1-AUTH SETTINGS
+USER_ATTRIBUTES_MAP = {
+    'last_name': 'family_name',
+    'first_name': 'given_name',
+    'email': 'email'
+}
+
+USER_MEMBERSHIPS = {
+    'groups': {
+        'name': 'group-simple'
+    },
+}
+
+if os.environ.get('STAFF_FLAG') is not None:
+    USER_STAFF_FLAG = os.environ.get('STAFF_FLAG')
+
+if os.environ.get('STAFF_VALUE') is not None:
+    USER_STAFF_VALUE = os.environ.get('STAFF_VALUE')
+
+if os.environ.get('SU_FLAG') is not None:
+    USER_SUPERUSER_FLAG = os.environ.get('SU_FLAG')
+
+if os.environ.get('SU_VALUE') is not None:
+    USER_SUPERUSER_VALUE = os.environ.get('SU_VALUE')
+
+# if JWT is required to login or not
+# if os.environ.get('REQUIRE_JWT') is not None:
+#     REQUIRE_JWT = True
+
+# flag to change whether the person is staff or superuser
+STAFF_FLAG="group-full"
+# SU_FLAG="group-full"
