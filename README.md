@@ -213,7 +213,7 @@ git clone https://github.com/adlnet/ecc-openlxp-xds.git
 
                 - `Template`: Select a 'template' from the drop down options set up previously.
 
-# 5. Removing Deployment
+## 5. Removing Deployment
 To destroy the created resources, simply run the docker-compose command below in your terminal:
 ```
 docker-compose down
@@ -251,6 +251,10 @@ Information on the settings for the authentication module can be found on the [O
 
 The setting `OPEN_ENDPOINTS` can be defined in the django settings file.
 It is a list of strings (regex notation may be used) for URLs that should not check for authentication or authorization.
+
+# Additional Info
+
+Additional information about ECC can be found in our [ECC wiki](https://github.com/adlnet/ecc-openlxp-xds-ui/wiki)
 
 # License
 
