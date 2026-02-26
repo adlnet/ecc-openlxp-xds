@@ -219,7 +219,7 @@ To destroy the created resources, simply run the docker-compose command below in
 docker-compose down
 ```
 
-##Troubleshooting
+## Troubleshooting
 - If the container builds but crashes or logs an error of unrecognized commands, the issue is usually incorrect line endings. Most IDEs/Text Editors allow changing the line endings, but the dos2unix utility can also be used to change the line endings of `start-app.sh` and `start-server.sh` to LF.
 
 
