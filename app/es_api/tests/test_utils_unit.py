@@ -25,7 +25,7 @@ class UtilTests(TestCase):
                 }
             }
             response_obj.hits.total.value = 1
-            with patch('elasticsearch_dsl.response.hit.to_dict') as to_dict, \
+            with patch('elasticsearch_dsl.response.hit.to_dict', return_value={"key": "value"}) as to_dict, \
                     patch(
                         'es_api.utils.queries.'
                         'SearchFilter.objects') as sfObj, \

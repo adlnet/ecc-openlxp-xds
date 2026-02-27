@@ -1,3 +1,11 @@
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a) {
+    text-decoration: inherit;
+}
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a):hover,
+.admin-interface a:not([role="button"], #header a, #nav-sidebar a, #content-main.app-list a, .object-tools a):focus {
+    text-decoration: underline;
+}
+
 /* fix generic flex container */
 .admin-interface .flex-container {
     width: 100%;
@@ -40,6 +48,19 @@
 }
 /* end-fix */
 
+/* fix user reset password form */
+.admin-interface #user_form #id_password p bdi::after {
+    content: "";
+    display: block;
+}
+
+.admin-interface #user_form #id_password a.button {
+    display: inline-block;
+    padding: 6px 12px;
+    text-decoration: none !important;
+}
+/* end-fix */
+
 /* fixed time widget header border radius */
 .admin-interface .clockbox.module h2 {
     border-bottom-left-radius: 0;
@@ -64,8 +85,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 32px;
+}
+.admin-interface .related-widget-wrapper .related-widget-wrapper-link:first-of-type {
+    margin-left: 8px;
+}
+.admin-interface .related-widget-wrapper .related-widget-wrapper-link:hover {
+    filter: brightness(80%);
 }
 .admin-interface .related-widget-wrapper .related-widget-wrapper-link img {
     width: 16px;
@@ -80,6 +107,10 @@
     margin-top: 8px;
 }
 /* end fix */
+
+.admin-interface .related-widget-wrapper .selector-chooser {
+    border-radius: 15px;
+}
 
 /* fix selector chooser slide transition */
 .admin-interface .related-widget-wrapper .selector-chooser .selector-add,
@@ -108,6 +139,7 @@
 /* fix [stacked, not-stacked] select options text overflow */
 .admin-interface .selector .selector-available select option,
 .admin-interface .selector .selector-chosen select option {
+    color: var(--body-fg) !important;
     overflow: hidden;
     text-overflow: ellipsis;
 }
@@ -115,6 +147,11 @@
 /* fix [not-stacked] equalize selectors height by adding the height of the .selector-available filter-bar */
 .admin-interface .selector:not(.stacked) .selector-chosen select {
     height: calc(46px + 17.2em) !important;
+}
+
+/* fix selected options color */
+.admin-interface .selector select option:checked {
+    color: inherit;
 }
 
 @media (max-width: 767px) {

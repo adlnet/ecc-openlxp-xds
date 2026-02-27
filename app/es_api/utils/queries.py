@@ -3,8 +3,8 @@ import json
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
-from elasticsearch_dsl import A, Document, Q
-from elasticsearch_dsl.query import MoreLikeThis
+from elasticsearch.dsl import A, Document, Q
+from elasticsearch.dsl.query import MoreLikeThis
 
 from configurations.models import CourseInformationMapping, XDSConfiguration
 from core.models import (CourseSpotlight, SearchField, SearchFilter,
